@@ -1,0 +1,136 @@
+Чудово, що ти зібрав 20,000 рядків даних — це солідний датасет, якого з головою вистачить для отримання високих балів за модель. Вибір FastAPI + Jinja2 — це дуже професійне рішення (краще за Streamlit для "справжнього" бекенду), яке дає тобі гнучкість.
+
+Оскільки ти запитуєш про Jupyter Notebooks, то саме там зараз відбуватиметься "магія" (пункти 4–8 і 10 твоїх вимог). Notebook — це твоя лабораторія. Сервер (FastAPI) — це вже вітрина готового продукту.
+
+Ось твоя послідовність дій крок за кроком:
+
+Етап 1: Робота в Notebooks (Виконання ML вимог)
+Твоя мета в ноутбуці — не просто погратися з даними, а пройти по пунктах оцінювання і зберегти навчену модель у файл (наприклад, model.pkl), щоб потім завантажити її у FastAPI.
+
+Створи ноутбук exploration.ipynb (або train_model.ipynb) і роби наступне:
+
+1. Вчитуємо та чистимо JSON (Пункт 1 і 2)
+Завантаж свої 20к ліній. Тобі треба перетворити це на pandas.DataFrame.
+
+Завдання: Витягнути explanation (X) і створити мітку класу label (y) на основі заголовка чи ключових слів (як ми обговорювали: Galaxy, Nebula, etc.).
+
+2. Вступний аналіз даних (EDA) (Пункт 4 - 2 бали)
+Тут ти показуєш, що розумієш свої дані.
+
+Баланс класів: Побудуй графік (seaborn.countplot), скільки у тебе Галактик, скільки Планет. Якщо одних 15000, а інших 100 — треба робити балансування (downsampling/upsampling).
+
+Аналіз тексту: Порахуй середню довжину опису. Побудуй хмаринку слів (WordCloud) для кожного класу окремо.
+
+3. Препроцесинг та Векторизація (Пункт 5 і 6 - 4 бали)
+Cleaning: Напиши функцію, яка прибирає стоп-слова, знаки пунктуації, робить lower().
+
+Vectorization: Використай TfidfVectorizer з sklearn. Це перетворить твої тексти на цифри.
+
+4. Тренування та порівняння моделей (Пункт 7 і 8 - 4 бали)
+Це критичний момент. Тобі треба спробувати кілька алгоритмів.
+
+Спробуй Naive Bayes (MultinomialNB) — база для тексту.
+
+Спробуй Logistic Regression або SVM.
+
+Спробуй Random Forest.
+
+Використай GridSearchCV для підбору параметрів (Fine tuning). Це дасть тобі бали за пункт 8.
+
+5. Оцінка результатів (Пункт 10 - 2 бали)
+Виведи classification_report (precision, recall, f1-score).
+
+Побудуй Confusion Matrix (Матрицю помилок). Це покаже, чи плутає модель "Туманність" з "Галактикою".
+
+6. Експорт моделі (Ключове для FastAPI)
+Коли знайдеш найкращу модель, збережи її та векторайзер.
+
+Python
+
+import joblib
+joblib.dump(best_model, 'model.pkl')
+joblib.dump(vectorizer, 'vectorizer.pkl')
+Етап 2: Рефакторинг в OOP (Пункт 2 - 2 бали)
+Вимоги викладача чіткі: OOP. Не залишай весь код у ноутбуці. Створи структуру папок, наприклад src/ або app/core/, і перенеси логіку з ноутбука в класи .py файлів.
+
+Приклад структури класів:
+
+class DataProcessor: методи clean_text(), load_data().
+
+class ModelTrainer: методи train(), evaluate().
+
+class Predictor: метод predict(text), який завантажує .pkl і видає результат.
+
+Етап 3: Інтеграція з FastAPI (Пункт 1 - 2 бали)
+Тепер повертаємось до твого main.py. Він має використовувати твій клас Predictor.
+
+Логіка сервера:
+
+При старті сервера (startup event) завантажуємо model.pkl у пам'ять (щоб не читати диск при кожному запиті).
+
+Робимо HTML форму в index.html (Jinja2), де юзер вводить текст.
+
+При натисканні кнопки POST запит летить на ендпоінт /predict.
+
+Сервер проганяє текст через модель і віддає результат у шаблон result.html.
+
+Приклад коду для Notebook (Що робити прямо зараз)
+Ось "риба" твого ноутбука, щоб закрити пункти 4–10:
+
+Python
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import classification_report, confusion_matrix
+import joblib
+
+# 1. ЗАВАНТАЖЕННЯ (Припустимо, ти вже зберіг clean_data.csv з полями text і label)
+# Якщо у тебе чистий JSON, спочатку розпарси його в DataFrame
+df = pd.read_csv('nasa_data_20k.csv') 
+
+# 2. EDA (Пункт 4)
+print("Розподіл класів:")
+print(df['label'].value_counts())
+sns.countplot(x='label', data=df)
+plt.title("Class Distribution")
+plt.show()
+
+# 3. ВЕКТОРИЗАЦІЯ (Пункт 6)
+# X - текст, y - мітки
+X_train, X_test, y_train, y_test = train_test_split(df['text'], df['label'], test_size=0.2, random_state=42)
+
+vectorizer = TfidfVectorizer(stop_words='english', max_features=5000)
+X_train_vec = vectorizer.fit_transform(X_train)
+X_test_vec = vectorizer.transform(X_test)
+
+# 4. ТРЕНУВАННЯ (Пункт 7)
+model = MultinomialNB()
+model.fit(X_train_vec, y_train)
+
+# 5. ОЦІНКА (Пункт 10)
+y_pred = model.predict(X_test_vec)
+print(classification_report(y_test, y_pred))
+
+# Confusion Matrix
+cm = confusion_matrix(y_test, y_pred)
+sns.heatmap(cm, annot=True, fmt='d')
+plt.show()
+
+# 6. ЗБЕРЕЖЕННЯ (Для FastAPI)
+joblib.dump(model, 'nasa_classifier.pkl')
+joblib.dump(vectorizer, 'tfidf_vectorizer.pkl')
+print("Модель збережено!")
+Що робити далі (Short list):
+Відкрий Jupyter Notebook.
+
+Завантаж свої 20к даних.
+
+Напиши скрипт, який перетворить JSON на таблицю: text (опис) | label (тип об'єкту, який ти витягнеш з title/keywords). Це найважливіше зараз. Без міток (labels) ти не зможеш тренувати модель.
+
+Прожени код вище.
+
+Як все запрацює — пиши, допоможу інтегрувати це в FastAPI через класи.

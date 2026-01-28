@@ -1,0 +1,52 @@
+import joblib
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
+
+class SpaceClassifier:
+    
+    def __init__(self, model_type='nb'):
+        self.model_type = model_type
+        
+        if model_type == 'nb':
+            clf = MultinomialNB()
+        elif model_type == 'logreg':
+            clf = LogisticRegression(max_iter=1000, class_weight='balanced')
+        else:
+            raise ValueError("Unknown model type. Choose 'nb' or 'logreg'.")
+
+        self.pipeline = Pipeline([
+            ('tfidf', TfidfVectorizer(stop_words='english', max_features=10000)),
+            ('clf', clf)
+        ])
+        
+    def train(self, X_train, y_train):
+        """Trains the model on text data."""
+        print(f"Training {self.model_type.upper()} model...")
+        self.pipeline.fit(X_train, y_train)
+        print("Training complete.")
+
+    def evaluate(self, X_test, y_test):
+        """Returns accuracy and classification report."""
+        predictions = self.pipeline.predict(X_test)
+        acc = accuracy_score(y_test, predictions)
+        report = classification_report(y_test, predictions)
+        return acc, report
+
+    def predict(self, text):
+        """Predicts the class of a single text string."""
+        if isinstance(text, str):
+            text = [text]
+        return self.pipeline.predict(text)[0]
+
+    def save(self, filepath):
+        """Saves the trained pipeline to a .pkl file."""
+        joblib.dump(self.pipeline, filepath)
+        print(f"Model saved to {filepath}")
+
+    def load(self, filepath):
+        """Loads a trained pipeline from a .pkl file."""
+        self.pipeline = joblib.load(filepath)
+        print(f"Model loaded from {filepath}")
