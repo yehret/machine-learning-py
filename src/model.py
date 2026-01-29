@@ -37,6 +37,18 @@ class SpaceClassifier:
         if isinstance(text, str):
             text = [text]
         return self.pipeline.predict(text)[0]
+    
+    def predict_proba(self, text):
+        """Returns dictionary with probabilities for each class."""
+        if isinstance(text, str):
+            text = [text]
+        
+        probs = self.pipeline.predict_proba(text)[0]
+        
+        classes = self.pipeline.classes_
+        
+        result = {c: round(p * 100, 2) for c, p in zip(classes, probs)}
+        return result
 
     def save(self, filepath):
         joblib.dump(self.pipeline, filepath)

@@ -38,4 +38,9 @@ async def serve_home(request: Request):
 async def predict(item: DescriptionRequest):
     prediction = classifier.predict(item.text)
     
-    return JSONResponse(content={"prediction": prediction})
+    probabilities = classifier.predict_proba(item.text)
+    
+    return JSONResponse(content={
+        "prediction": prediction,
+        "probabilities": probabilities
+    })

@@ -10,6 +10,7 @@
         --secondary: #00cec9;
         --bg: #0f0f1a;
         --card: #1e1e2f;
+        --bar-bg: #2d2d44;
       }
 
       body {
@@ -32,7 +33,6 @@
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         width: 90%;
         max-width: 600px;
-        text-align: center;
         border: 1px solid #333;
       }
 
@@ -42,16 +42,18 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-size: 2.5rem;
+        text-align: center;
       }
 
       p.subtitle {
         color: #a0a0b0;
         margin-bottom: 2rem;
+        text-align: center;
       }
 
       textarea {
         width: 100%;
-        height: 150px;
+        height: 120px;
         background: #2d2d44;
         border: 2px solid #3f3f5f;
         border-radius: 12px;
@@ -90,35 +92,60 @@
 
       #result {
         margin-top: 2rem;
-        padding: 1.5rem;
-        border-radius: 12px;
         display: none;
         animation: fadeIn 0.5s ease;
       }
 
-      .result-label {
+      .confidence-label {
+        text-align: center;
+        color: #888;
         font-size: 0.9rem;
         text-transform: uppercase;
-        letter-spacing: 2px;
-        color: #888;
+        letter-spacing: 1px;
       }
 
-      .prediction {
+      .main-prediction {
         font-size: 2.5rem;
         font-weight: bold;
-        margin: 0.5rem 0;
         color: var(--secondary);
+        margin-bottom: 20px;
+        text-align: center;
       }
 
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+      .breakdown-item {
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.95rem;
+      }
+
+      .bar-container {
+        flex-grow: 1;
+        height: 8px;
+        background: var(--bar-bg);
+        border-radius: 4px;
+        margin: 0 15px;
+        overflow: hidden;
+      }
+
+      .bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 1s ease;
+      }
+
+      .percent {
+        width: 45px;
+        text-align: right;
+        font-family: monospace;
+        color: #ddd;
+      }
+
+      .label {
+        width: 100px;
+        text-align: left;
+        font-weight: 600;
       }
 
       .loader {
@@ -128,7 +155,7 @@
         width: 30px;
         height: 30px;
         animation: spin 1s linear infinite;
-        margin: 0 auto;
+        margin: 20px auto;
         display: none;
       }
 
@@ -138,6 +165,16 @@
         }
         100% {
           transform: rotate(360deg);
+        }
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
       }
     </style>
@@ -159,9 +196,10 @@
       <div class="loader" id="loader"></div>
 
       <div id="result">
-        <div class="result-label">AI Prediction</div>
-        <div class="prediction" id="predictionText">Galaxy</div>
-        <div id="confidence" style="color: #aaa"></div>
+        <div class="confidence-label">AI is <span id="mainConfidence"></span>% sure it's a:</div>
+        <div class="main-prediction" id="mainPred">Galaxy</div>
+
+        <div id="breakdown"></div>
       </div>
     </div>
 
@@ -170,7 +208,9 @@
         const text = document.getElementById('inputText').value;
         const resultDiv = document.getElementById('result');
         const loader = document.getElementById('loader');
-        const predText = document.getElementById('predictionText');
+        const mainPred = document.getElementById('mainPred');
+        const breakdownDiv = document.getElementById('breakdown');
+        const mainConfidence = document.getElementById('mainConfidence');
 
         if (!text.trim()) {
           alert('Please enter some text!');
@@ -179,6 +219,7 @@
 
         loader.style.display = 'block';
         resultDiv.style.display = 'none';
+        breakdownDiv.innerHTML = '';
 
         try {
           const response = await fetch('/predict', {
@@ -189,17 +230,39 @@
 
           const data = await response.json();
 
-          predText.textContent = data.prediction;
+          const colors = {
+            Planet: '#00b894',
+            Galaxy: '#a29bfe',
+            Star: '#fdcb6e',
+            Nebula: '#e17055',
+            Asteroid_Comet: '#74b9ff',
+          };
 
-          if (data.prediction === 'Planet') predText.style.color = '#00b894';
-          else if (data.prediction === 'Galaxy') predText.style.color = '#a29bfe';
-          else if (data.prediction === 'Star') predText.style.color = '#fdcb6e';
-          else predText.style.color = '#00cec9';
+          const sortedProbs = Object.entries(data.probabilities).sort((a, b) => b[1] - a[1]);
+
+          const topResult = sortedProbs[0];
+          mainPred.textContent = topResult[0];
+          mainPred.style.color = colors[topResult[0]] || '#00cec9';
+          mainConfidence.textContent = topResult[1];
+
+          sortedProbs.forEach(([label, score]) => {
+            const color = colors[label] || '#ccc';
+            const html = `
+                <div class="breakdown-item">
+                    <span class="label" style="color: ${color}">${label}</span>
+                    <div class="bar-container">
+                        <div class="bar-fill" style="width: ${score}%; background-color: ${color};"></div>
+                    </div>
+                    <span class="percent">${score}%</span>
+                </div>
+            `;
+            breakdownDiv.innerHTML += html;
+          });
 
           resultDiv.style.display = 'block';
         } catch (error) {
           console.error('Error:', error);
-          alert('Error connecting to the AI server.');
+          alert('Error connecting to the AI server. Did you start main.py?');
         } finally {
           loader.style.display = 'none';
         }
