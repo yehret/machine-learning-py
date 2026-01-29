@@ -18,35 +18,30 @@ class SpaceClassifier:
             raise ValueError("Unknown model type. Choose 'nb' or 'logreg'.")
 
         self.pipeline = Pipeline([
-            ('tfidf', TfidfVectorizer(stop_words='english', max_features=10000)),
+            ('tfidf', TfidfVectorizer(stop_words='english', max_features=15000, ngram_range=(1, 2))),
             ('clf', clf)
         ])
         
     def train(self, X_train, y_train):
-        """Trains the model on text data."""
         print(f"Training {self.model_type.upper()} model...")
         self.pipeline.fit(X_train, y_train)
         print("Training complete.")
 
     def evaluate(self, X_test, y_test):
-        """Returns accuracy and classification report."""
         predictions = self.pipeline.predict(X_test)
         acc = accuracy_score(y_test, predictions)
         report = classification_report(y_test, predictions)
         return acc, report
 
     def predict(self, text):
-        """Predicts the class of a single text string."""
         if isinstance(text, str):
             text = [text]
         return self.pipeline.predict(text)[0]
 
     def save(self, filepath):
-        """Saves the trained pipeline to a .pkl file."""
         joblib.dump(self.pipeline, filepath)
         print(f"Model saved to {filepath}")
 
     def load(self, filepath):
-        """Loads a trained pipeline from a .pkl file."""
         self.pipeline = joblib.load(filepath)
         print(f"Model loaded from {filepath}")

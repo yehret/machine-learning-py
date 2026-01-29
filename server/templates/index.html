@@ -1,6 +1,209 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NASA AI Classifier</title>
+    <style>
+      :root {
+        --primary: #6c5ce7;
+        --secondary: #00cec9;
+        --bg: #0f0f1a;
+        --card: #1e1e2f;
+      }
+
+      body {
+        background-color: var(--bg);
+        color: white;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000000 100%);
+      }
+
+      .container {
+        background: var(--card);
+        padding: 2rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        width: 90%;
+        max-width: 600px;
+        text-align: center;
+        border: 1px solid #333;
+      }
+
+      h1 {
+        margin-bottom: 0.5rem;
+        background: linear-gradient(to right, var(--secondary), var(--primary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2.5rem;
+      }
+
+      p.subtitle {
+        color: #a0a0b0;
+        margin-bottom: 2rem;
+      }
+
+      textarea {
+        width: 100%;
+        height: 150px;
+        background: #2d2d44;
+        border: 2px solid #3f3f5f;
+        border-radius: 12px;
+        color: white;
+        padding: 1rem;
+        font-size: 1.1rem;
+        resize: none;
+        box-sizing: border-box;
+        transition: 0.3s;
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: var(--secondary);
+        box-shadow: 0 0 15px rgba(0, 206, 201, 0.2);
+      }
+
+      button {
+        background: linear-gradient(45deg, var(--primary), var(--secondary));
+        border: none;
+        padding: 1rem 2rem;
+        color: white;
+        font-size: 1.2rem;
+        font-weight: bold;
+        border-radius: 50px;
+        cursor: pointer;
+        margin-top: 1.5rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+        width: 100%;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(108, 92, 231, 0.4);
+      }
+
+      #result {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        border-radius: 12px;
+        display: none;
+        animation: fadeIn 0.5s ease;
+      }
+
+      .result-label {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: #888;
+      }
+
+      .prediction {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 0.5rem 0;
+        color: var(--secondary);
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--secondary);
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+        display: none;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
   <body>
-    <h1>Server Status: {{ status }}</h1>
-    <p>Your FastAPI + Jinja2 setup is ready for your project.</p>
+    <div class="container">
+      <h1>Cosmic Classifier</h1>
+      <p class="subtitle">
+        Enter a description of a space object, and AI will tell you what it is.
+      </p>
+
+      <textarea
+        id="inputText"
+        placeholder="Example: A massive cloud of gas and dust where new stars are born..."
+      ></textarea>
+
+      <button onclick="predict()">Analyze Text</button>
+
+      <div class="loader" id="loader"></div>
+
+      <div id="result">
+        <div class="result-label">AI Prediction</div>
+        <div class="prediction" id="predictionText">Galaxy</div>
+        <div id="confidence" style="color: #aaa"></div>
+      </div>
+    </div>
+
+    <script>
+      async function predict() {
+        const text = document.getElementById('inputText').value;
+        const resultDiv = document.getElementById('result');
+        const loader = document.getElementById('loader');
+        const predText = document.getElementById('predictionText');
+
+        if (!text.trim()) {
+          alert('Please enter some text!');
+          return;
+        }
+
+        loader.style.display = 'block';
+        resultDiv.style.display = 'none';
+
+        try {
+          const response = await fetch('/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text }),
+          });
+
+          const data = await response.json();
+
+          predText.textContent = data.prediction;
+
+          if (data.prediction === 'Planet') predText.style.color = '#00b894';
+          else if (data.prediction === 'Galaxy') predText.style.color = '#a29bfe';
+          else if (data.prediction === 'Star') predText.style.color = '#fdcb6e';
+          else predText.style.color = '#00cec9';
+
+          resultDiv.style.display = 'block';
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Error connecting to the AI server.');
+        } finally {
+          loader.style.display = 'none';
+        }
+      }
+    </script>
   </body>
 </html>
