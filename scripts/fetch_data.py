@@ -30,7 +30,7 @@ def fetch_year(year):
         return []
 
 def main():
-    years_to_fetch = [2015, 2018, 2019]
+    years_to_fetch = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
     
     master_data = []
     

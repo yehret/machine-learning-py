@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-# --- ETUP PATHS & IMPORT MODEL ---
+# --- SETUP PATHS & IMPORT MODEL ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 if str(BASE_DIR) not in sys.path:
@@ -18,12 +18,12 @@ app = FastAPI()
 
 templates = Jinja2Templates(directory="server/templates")
 
-print("⏳ Loading AI Model...")
+print("Loading AI Model...")
 model_path = BASE_DIR / "models" / "space_model_v1.pkl"
 
 classifier = SpaceClassifier()
 classifier.load(model_path)
-print("✅ Model Loaded Successfully!")
+print("Model Loaded Successfully!")
 
 # --- DATA MODELS ---
 class DescriptionRequest(BaseModel):

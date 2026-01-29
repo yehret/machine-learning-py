@@ -7,7 +7,7 @@ from sklearn.metrics import classification_report, accuracy_score, confusion_mat
 
 class SpaceClassifier:
     
-    def __init__(self, model_type='nb'):
+    def __init__(self, model_type='logreg'):
         self.model_type = model_type
         
         if model_type == 'nb':
@@ -39,7 +39,6 @@ class SpaceClassifier:
         return self.pipeline.predict(text)[0]
     
     def predict_proba(self, text):
-        """Returns dictionary with probabilities for each class."""
         if isinstance(text, str):
             text = [text]
         
